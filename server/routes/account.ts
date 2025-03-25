@@ -1,3 +1,5 @@
+import { loginValidation, registerValidation } from "@/types/validation";
+import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 
 const route = new Hono()
@@ -6,10 +8,10 @@ const route = new Hono()
   .basePath("/api")
 
   // TODO: POST /register company
-  .post("/register", async (c) => {})
+  .post("/register", zValidator("form", registerValidation), async (c) => {})
 
   // TODO: POST /login company
-  .post("/login", async (c) => {})
+  .post("/login", zValidator("form", loginValidation), async (c) => {})
 
   // TODO: GET /logout company
   .get("/logout", async (c) => {})
