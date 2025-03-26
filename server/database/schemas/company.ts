@@ -1,8 +1,8 @@
 import { relations } from "drizzle-orm";
 import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
-import { branchTable } from "./branch";
+import { branchTable } from ".";
 
-export const companyTable = pgTable("companies", {
+const companyTable = pgTable("companies", {
   id: uuid().primaryKey(),
   businessName: text().notNull(),
   brandName: text().notNull(),
@@ -21,3 +21,5 @@ export const companyTable = pgTable("companies", {
 export const companyRelation = relations(companyTable, ({ many }) => ({
   branch: many(branchTable),
 }));
+
+export default companyTable;

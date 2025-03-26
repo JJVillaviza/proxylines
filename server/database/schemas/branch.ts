@@ -1,11 +1,11 @@
 import { relations } from "drizzle-orm";
 import { pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
-import { accountTable } from "./account";
+import { accountTable } from ".";
 import { companyTable } from "./company";
 
 export const branchEnum = pgEnum("types", ["main", "branch"]);
 
-export const branchTable = pgTable("branches", {
+const branchTable = pgTable("branches", {
   id: uuid().primaryKey(),
   name: text().notNull(),
   role: branchEnum(),
@@ -31,3 +31,5 @@ export const branchRelation = relations(branchTable, ({ one }) => ({
     references: [companyTable.id],
   }),
 }));
+
+export default branchTable;

@@ -1,11 +1,11 @@
 import { relations } from "drizzle-orm";
 import { pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
-import { branchTable } from "./branch";
-import { sessionTable } from "./session";
+import { branchTable } from ".";
+import { sessionTable } from ".";
 
 export const accountEnum = pgEnum("types", ["company", "client", "courier"]);
 
-export const accountTable = pgTable("accounts", {
+const accountTable = pgTable("accounts", {
   id: uuid("id").primaryKey(),
   username: text("username").notNull(),
   password: text("password").notNull(),
@@ -29,3 +29,5 @@ export const accountRelation = relations(accountTable, ({ one }) => ({
     references: [sessionTable.token],
   }),
 }));
+
+export default accountTable;

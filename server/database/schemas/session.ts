@@ -1,8 +1,8 @@
 import { relations } from "drizzle-orm";
 import { pgTable, timestamp, uuid } from "drizzle-orm/pg-core";
-import { accountTable } from "./account";
+import { accountTable } from ".";
 
-export const sessionTable = pgTable("sessions", {
+const sessionTable = pgTable("sessions", {
   id: uuid("id").primaryKey(),
   token: uuid("token").notNull(),
   expiresAt: timestamp("expires_at", {
@@ -24,3 +24,5 @@ export const sessionRelation = relations(sessionTable, ({ one }) => ({
     references: [accountTable.id],
   }),
 }));
+
+export default sessionTable;
