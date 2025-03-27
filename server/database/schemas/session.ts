@@ -1,10 +1,11 @@
 import { relations } from "drizzle-orm";
 import { pgTable, timestamp, uuid } from "drizzle-orm/pg-core";
-import { accountTable } from ".";
+import * as schemas from "./index";
 
 const sessionTable = pgTable("sessions", {
   id: uuid("id").primaryKey(),
   token: uuid("token").notNull(),
+  accountId: uuid("account_id").notNull(),
   expiresAt: timestamp("expires_at", {
     withTimezone: true,
     mode: "date",
@@ -19,9 +20,9 @@ const sessionTable = pgTable("sessions", {
 });
 
 export const sessionRelation = relations(sessionTable, ({ one }) => ({
-  account: one(accountTable, {
+  account: one(schemas.accountTable, {
     fields: [sessionTable.token],
-    references: [accountTable.id],
+    references: [schemas.accountTable.id],
   }),
 }));
 

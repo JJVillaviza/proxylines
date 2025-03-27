@@ -1,13 +1,16 @@
 import { relations } from "drizzle-orm";
 import { pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
-import { branchTable } from ".";
-import { sessionTable } from ".";
+import * as schemas from "./index";
 
-export const accountEnum = pgEnum("types", ["company", "client", "courier"]);
+export const accountEnum = pgEnum("accountTypes", [
+  "company",
+  "client",
+  "courier",
+]);
 
 const accountTable = pgTable("accounts", {
   id: uuid("id").primaryKey(),
-  username: text("username").notNull(),
+  username: text("username").notNull().unique(),
   password: text("password").notNull(),
   type: accountEnum(),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
@@ -20,13 +23,13 @@ const accountTable = pgTable("accounts", {
 });
 
 export const accountRelation = relations(accountTable, ({ one }) => ({
-  branch: one(branchTable, {
+  branch: one(schemas.branchTable, {
     fields: [accountTable.id],
-    references: [branchTable.account_id],
+    references: [schemas.branchTable.accountId],
   }),
-  session: one(sessionTable, {
+  session: one(schemas.sessionTable, {
     fields: [accountTable.id],
-    references: [sessionTable.token],
+    references: [schemas.sessionTable.token],
   }),
 }));
 

@@ -1,17 +1,16 @@
 import { relations } from "drizzle-orm";
 import { pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
-import { accountTable } from ".";
-import { companyTable } from "./company";
+import * as schemas from "./index";
 
-export const branchEnum = pgEnum("types", ["main", "branch"]);
+export const branchEnum = pgEnum("branchTypes", ["main", "branch"]);
 
 const branchTable = pgTable("branches", {
-  id: uuid().primaryKey(),
-  name: text().notNull(),
+  id: uuid("id").primaryKey(),
+  name: text("name").notNull(),
   role: branchEnum(),
-  email: text().notNull(),
-  company_id: uuid(),
-  account_id: uuid().notNull(),
+  email: text("email").notNull().unique(),
+  companyId: uuid("company_id"),
+  accountId: uuid("account_id").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
     .notNull()
     .defaultNow(),
@@ -22,13 +21,13 @@ const branchTable = pgTable("branches", {
 });
 
 export const branchRelation = relations(branchTable, ({ one }) => ({
-  account: one(accountTable, {
-    fields: [branchTable.account_id],
-    references: [accountTable.id],
+  account: one(schemas.accountTable, {
+    fields: [branchTable.accountId],
+    references: [schemas.accountTable.id],
   }),
-  company: one(companyTable, {
-    fields: [branchTable.company_id],
-    references: [companyTable.id],
+  company: one(schemas.companyTable, {
+    fields: [branchTable.companyId],
+    references: [schemas.companyTable.id],
   }),
 }));
 

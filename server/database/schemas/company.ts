@@ -1,14 +1,14 @@
 import { relations } from "drizzle-orm";
 import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
-import { branchTable } from ".";
+import * as schemas from "./index";
 
 const companyTable = pgTable("companies", {
-  id: uuid().primaryKey(),
-  businessName: text().notNull(),
-  brandName: text().notNull(),
-  description: text(),
-  vision: text(),
-  mission: text(),
+  id: uuid("id").primaryKey(),
+  businessName: text("business_name").notNull(),
+  brandName: text("brand_name").notNull(),
+  description: text("description"),
+  vision: text("vision"),
+  mission: text("mission"),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
     .notNull()
     .defaultNow(),
@@ -19,7 +19,7 @@ const companyTable = pgTable("companies", {
 });
 
 export const companyRelation = relations(companyTable, ({ many }) => ({
-  branch: many(branchTable),
+  branch: many(schemas.branchTable),
 }));
 
 export default companyTable;
