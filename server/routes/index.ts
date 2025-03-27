@@ -1,7 +1,11 @@
-import authentication from "./authentication";
-import branch from "./branch";
-import company from "./company";
+import authenticationRoutes from "./authentication";
+// import branchRoute from "./branch";
+// import companyRoute from "./company";
 
-export const routes = [authentication, branch, company] as const;
+export const routes = [
+  authenticationRoutes,
+  // branchRoute,
+  // companyRoute,
+] as const;
 
 export type AppRoutes = (typeof routes)[number];

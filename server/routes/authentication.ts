@@ -7,10 +7,12 @@ import { HTTPException } from "hono/http-exception";
 import { DatabaseError } from "pg";
 import * as schemas from "@/database/schemas";
 import { eq } from "drizzle-orm";
-import { setCookie } from "hono/cookie";
+import { deleteCookie, setCookie } from "hono/cookie";
 import { CreateSession } from "@/utilities/session";
+import type { Context } from "@/utilities/context";
+import { SessionMiddleware } from "@/middlewares/session";
 
-const route = new Hono()
+const route = new Hono<Context>()
 
   // Base path
   .basePath("/api/account")
@@ -93,9 +95,28 @@ const route = new Hono()
   })
 
   // TODO: GET /logout company
-  .get("/logout", async (c) => {})
+  .get("/logout", SessionMiddleware, async (c) => {
+    const session = c.get("session") as string;
+    deleteCookie(c, "auth__session");
+    await db
+      .delete(schemas.sessionTable)
+      .where(eq(schemas.sessionTable.accountId, session));
+
+    return c.json<SuccessResponse>({
+      success: true,
+      message: "Successfully logout!",
+    });
+  })
 
   // TODO: GET /me company
-  .get("/me", async (c) => {});
+  .get("/me", SessionMiddleware, async (c) => {
+    const session = c.get("session");
+
+    return c.json<SuccessResponse<{ username: string }>>({
+      success: true,
+      message: "Account fetch!",
+      data: { username: session as string },
+    });
+  });
 
 export default route;
