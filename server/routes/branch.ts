@@ -79,12 +79,7 @@ const route = new Hono<Context>()
         const [result] = await db
           .update(schemas.branchTable)
           .set({ name, email, role, companyId, accountId })
-          .where(
-            and(
-              eq(schemas.branchTable.id, id),
-              ne(schemas.branchTable.role, "main")
-            )
-          )
+          .where(eq(schemas.branchTable.id, id))
           .returning({ name: schemas.branchTable.name });
 
         return c.json<SuccessResponse<{ name: string }>>({
