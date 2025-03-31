@@ -38,6 +38,7 @@ const route = new Hono<Context>()
         role: account ? "branch" : "main",
         email,
         accountId: id,
+        companyId: account ? account.companyId : id,
       });
 
       return c.json<SuccessResponse>(

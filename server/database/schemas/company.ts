@@ -4,7 +4,7 @@ import * as schemas from "./index";
 
 const companyTable = pgTable("companies", {
   id: uuid("id").primaryKey(),
-  businessName: text("business_name").notNull(),
+  businessName: text("business_name").notNull().unique(),
   brandName: text("brand_name").notNull(),
   description: text("description"),
   vision: text("vision"),

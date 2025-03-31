@@ -9,7 +9,7 @@ const branchTable = pgTable("branches", {
   name: text("name").notNull(),
   role: branchEnum(),
   email: text("email").notNull().unique(),
-  companyId: uuid("company_id"),
+  companyId: uuid("company_id").notNull(),
   accountId: uuid("account_id").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
     .notNull()

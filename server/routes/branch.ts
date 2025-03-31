@@ -88,6 +88,12 @@ const route = new Hono<Context>()
           data: { ...result },
         });
       } catch (error) {
+        if (error instanceof DatabaseError) {
+          throw new HTTPException(409, {
+            message: `${error.code}, ${error.message}`,
+            cause: { form: true },
+          });
+        }
         throw new HTTPException(500, {
           message: "Internal server error!",
           cause: { form: true },
@@ -135,9 +141,13 @@ const route = new Hono<Context>()
         if (error instanceof DatabaseError) {
           throw new HTTPException(409, {
             message: `${error.message} ${error.code}`,
+            cause: { form: true },
           });
         }
-        throw new HTTPException(500, { message: "Internal server error!" });
+        throw new HTTPException(500, {
+          message: "Internal server error!",
+          cause: { form: true },
+        });
       }
     }
   );

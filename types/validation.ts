@@ -25,11 +25,25 @@ export const idValidation = z.object({
 });
 
 export const branchValidation = z.object({
-  name: z.string().optional(),
+  name: z.string().min(3).max(30).optional(),
   email: z.string().email().optional(),
-  // username: z.string().optional(),
-  // password: z.string().optional(),
   role: z.enum(["main", "branch"]).optional(),
   companyId: z.string().optional(),
   accountId: z.string().optional(),
+});
+
+export const companyValidation = z.object({
+  businessName: z.string().min(3).max(31),
+  brandName: z.string().min(3).max(31),
+  description: z.string().min(20),
+  vision: z.string().min(10),
+  mission: z.string().min(10),
+});
+
+export const companyUpdateValidation = z.object({
+  businessName: z.string().min(3).max(31).optional(),
+  brandName: z.string().min(3).max(31).optional(),
+  description: z.string().min(20).optional(),
+  vision: z.string().min(10).optional(),
+  mission: z.string().min(10).optional(),
 });
