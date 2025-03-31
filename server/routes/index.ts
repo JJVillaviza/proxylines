@@ -1,10 +1,10 @@
 import authenticationRoutes from "./authentication";
-// import branchRoute from "./branch";
+import branchRoute from "./branch";
 // import companyRoute from "./company";
 
 export const routes = [
   authenticationRoutes,
-  // branchRoute,
+  branchRoute,
   // companyRoute,
 ] as const;
 

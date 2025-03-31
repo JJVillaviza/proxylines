@@ -9,7 +9,7 @@ import * as schemas from "@/database/schemas";
 import { eq } from "drizzle-orm";
 import { deleteCookie, setCookie } from "hono/cookie";
 import { CreateSession } from "@/utilities/session";
-import type { Context } from "@/utilities/context";
+import type { Account, Context } from "@/utilities/context";
 import { SessionMiddleware } from "@/middlewares/session";
 
 const route = new Hono<Context>()
@@ -22,6 +22,7 @@ const route = new Hono<Context>()
     const { name, email, username, password } = c.req.valid("form");
     const hash = await Bun.password.hash(password);
     const id = crypto.randomUUID();
+    const account = c.get("account");
 
     try {
       await db.insert(schemas.accountTable).values({
@@ -34,7 +35,7 @@ const route = new Hono<Context>()
       await db.insert(schemas.branchTable).values({
         id,
         name,
-        role: "main",
+        role: account ? "branch" : "main",
         email,
         accountId: id,
       });
@@ -96,11 +97,11 @@ const route = new Hono<Context>()
 
   // TODO: GET /logout company
   .get("/logout", SessionMiddleware, async (c) => {
-    const session = c.get("session") as string;
+    const session = c.get("session")!;
     deleteCookie(c, "auth__session");
     await db
       .delete(schemas.sessionTable)
-      .where(eq(schemas.sessionTable.accountId, session));
+      .where(eq(schemas.sessionTable.accountId, session.accountId));
 
     return c.json<SuccessResponse>({
       success: true,
@@ -110,12 +111,12 @@ const route = new Hono<Context>()
 
   // TODO: GET /me company
   .get("/me", SessionMiddleware, async (c) => {
-    const session = c.get("session");
+    const account = c.get("account");
 
-    return c.json<SuccessResponse<{ username: string }>>({
+    return c.json<SuccessResponse<Account>>({
       success: true,
       message: "Account fetch!",
-      data: { username: session as string },
+      data: { ...account } as Account,
     });
   });
 

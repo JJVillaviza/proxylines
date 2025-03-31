@@ -25,6 +25,7 @@ export const SessionMiddleware = createMiddleware<Context>(async (c, next) => {
   const expiresAt = new Date(session.expiresAt);
   if (expiresAt < new Date()) {
     c.set("session", null);
+    c.set("account", null);
     deleteCookie(c, "auth__session");
     await db
       .delete(schemas.sessionTable)
@@ -35,13 +36,22 @@ export const SessionMiddleware = createMiddleware<Context>(async (c, next) => {
   const newSessionToken = crypto.randomUUID();
   const extendedExpiresAt = new Date(Date.now() + 1000 * 10);
 
-  await db
+  const [updated] = await db
     .update(schemas.sessionTable)
     .set({ token: newSessionToken, expiresAt: extendedExpiresAt })
-    .where(eq(schemas.sessionTable.id, session.id));
+    .where(eq(schemas.sessionTable.id, session.id))
+    .returning();
+
+  const [branch] = await db
+    .select()
+    .from(schemas.branchTable)
+    .where(eq(schemas.branchTable.id, session.accountId))
+    .limit(1);
 
   setCookie(c, "auth__session", newSessionToken);
-  c.set("session", session.accountId);
+
+  c.set("session", updated);
+  c.set("account", branch);
 
   return next();
 });
