@@ -22,29 +22,43 @@ const route = new Hono<Context>()
     const { name, email, username, password } = c.req.valid("form");
     const hash = await Bun.password.hash(password);
     const id = crypto.randomUUID();
-    const account = c.get("account");
+    const login = c.get("account");
 
     try {
-      await db.insert(schemas.accountTable).values({
-        id,
-        username,
-        password: hash,
-        type: "company",
+      const register = await db.transaction(async (tx) => {
+        const [account] = await tx
+          .insert(schemas.accountTable)
+          .values({
+            id,
+            username,
+            password: hash,
+            type: "company",
+          })
+          .returning();
+
+        const [branch] = await tx
+          .insert(schemas.branchTable)
+          .values({
+            id,
+            name,
+            role: login ? "branch" : "main",
+            email,
+            accountId: id,
+            companyId: login ? login.companyId : id,
+          })
+          .returning();
+
+        return { account, branch };
       });
 
-      await db.insert(schemas.branchTable).values({
-        id,
-        name,
-        role: account ? "branch" : "main",
-        email,
-        accountId: id,
-        companyId: account ? account.companyId : id,
-      });
-
-      return c.json<SuccessResponse>(
+      return c.json<SuccessResponse<{ name: string; username: string }>>(
         {
           success: true,
           message: "Successfully created account!",
+          data: {
+            name: register.branch.name,
+            username: register.account.username,
+          },
         },
         201
       );
@@ -112,12 +126,12 @@ const route = new Hono<Context>()
 
   // TODO: GET /me company
   .get("/me", SessionMiddleware, async (c) => {
-    const account = c.get("account");
+    const account = c.get("account")!;
 
     return c.json<SuccessResponse<Account>>({
       success: true,
       message: "Account fetch!",
-      data: { ...account } as Account,
+      data: { ...account },
     });
   });
 

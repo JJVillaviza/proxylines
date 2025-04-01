@@ -34,7 +34,7 @@ export const SessionMiddleware = createMiddleware<Context>(async (c, next) => {
   }
 
   const newSessionToken = crypto.randomUUID();
-  const extendedExpiresAt = new Date(Date.now() + 1000 * 10);
+  const extendedExpiresAt = new Date(Date.now() + 1000 * 60 * 10);
 
   const [updated] = await db
     .update(schemas.sessionTable)

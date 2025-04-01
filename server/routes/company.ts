@@ -16,6 +16,9 @@ import { and, eq } from "drizzle-orm";
 
 const route = new Hono<Context>()
 
+  // Base path
+  .basePath("/api/company")
+
   // TODO: /create company details
   .post(
     "/create",
@@ -125,10 +128,70 @@ const route = new Hono<Context>()
       if (account.accountId !== id && account.role !== "main") {
         throw new HTTPException(409, { message: "Unauthorized!" });
       }
+
+      try {
+        const [deleted] = await db.transaction(async (tx) => {
+          const [branch] = await tx
+            .delete(schemas.branchTable)
+            .where(eq(schemas.branchTable.companyId, id))
+            .returning({ id: schemas.branchTable.accountId });
+          await tx
+            .delete(schemas.accountTable)
+            .where(eq(schemas.accountTable.id, branch.id));
+
+          return tx
+            .delete(schemas.companyTable)
+            .where(eq(schemas.companyTable.id, account.companyId))
+            .returning({ company: schemas.companyTable.businessName });
+        });
+
+        return c.json<SuccessResponse<{ company: string }>>({
+          success: true,
+          message: "Successfully deleted company!",
+          data: { company: deleted.company },
+        });
+      } catch (error) {
+        if (error instanceof DatabaseError) {
+          throw new HTTPException(409, {
+            message: `${error.code}, ${error.message}`,
+          });
+        }
+        throw new HTTPException(500, { message: "Internal server error!" });
+      }
     }
   )
 
   // TODO: /:id company details
-  .get();
+  .get(
+    "/:id",
+    SessionMiddleware,
+    zValidator("param", idValidation),
+    async (c) => {
+      const { id } = c.req.valid("param");
+
+      try {
+        const [company] = await db
+          .select()
+          .from(schemas.companyTable)
+          .where(eq(schemas.companyTable.id, id))
+          .limit(1);
+
+        return c.json<SuccessResponse<typeof company>>({
+          success: true,
+          message: "Company fetch!",
+          data: { ...company },
+        });
+      } catch (error) {
+        if (error instanceof DatabaseError) {
+          throw new HTTPException(409, {
+            message: `${error.code}, ${error.message}`,
+          });
+        }
+        throw new HTTPException(500, {
+          message: "Internal server error!",
+        });
+      }
+    }
+  );
 
 export default route;
