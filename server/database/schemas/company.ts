@@ -20,6 +20,7 @@ const companyTable = pgTable("companies", {
 
 export const companyRelation = relations(companyTable, ({ many }) => ({
   branch: many(schemas.branchTable),
+  service: many(schemas.serviceTable),
 }));
 
 export default companyTable;

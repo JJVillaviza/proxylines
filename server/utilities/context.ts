@@ -3,6 +3,7 @@ import * as schemas from "@/database/schemas";
 
 export type Session = InferSelectModel<typeof schemas.sessionTable>;
 export type Account = InferSelectModel<typeof schemas.branchTable>;
+export type Service = InferSelectModel<typeof schemas.serviceTable>;
 
 export type Context = {
   Variables: {

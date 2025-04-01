@@ -47,3 +47,17 @@ export const companyUpdateValidation = z.object({
   vision: z.string().min(10).optional(),
   mission: z.string().min(10).optional(),
 });
+
+export const serviceValidation = z.object({
+  name: z.string().min(3).max(20),
+  description: z.string().min(20),
+  timeStart: z.string().time(),
+  timeEnd: z.string().time(),
+});
+
+export const serviceUpdateValidation = z.object({
+  name: z.string().min(3).max(20).optional(),
+  description: z.string().min(20).optional(),
+  timeStart: z.string().time().optional(),
+  timeEnd: z.string().time().optional(),
+});
