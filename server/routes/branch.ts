@@ -2,7 +2,11 @@ import { db } from "@/database";
 import * as schemas from "@/database/schemas";
 import { SessionMiddleware } from "@/middlewares/session";
 import type { SuccessResponse } from "@/types/response";
-import { branchValidation, idValidation } from "@/types/validation";
+import {
+  branchValidation,
+  idValidation,
+  registerValidation,
+} from "@/types/validation";
 import type { Account, Context } from "@/utilities/context";
 import { zValidator } from "@hono/zod-validator";
 import { and, eq, ne } from "drizzle-orm";
@@ -14,6 +18,62 @@ const route = new Hono<Context>()
 
   // Base path
   .basePath("/api/branch")
+
+  // TODO: POST /create branch
+  .post(
+    "/create",
+    SessionMiddleware,
+    zValidator("form", registerValidation),
+    async (c) => {
+      const { name, email, username, password } = c.req.valid("form");
+      const hash = await Bun.password.hash(password);
+      const id = crypto.randomUUID();
+      const login = c.get("account")!;
+
+      try {
+        const register = await db.transaction(async (tx) => {
+          const [account] = await tx
+            .insert(schemas.accountTable)
+            .values({ id, username, password: hash, type: "company" })
+            .returning();
+
+          const [branch] = await tx
+            .insert(schemas.branchTable)
+            .values({
+              id,
+              name,
+              role: "branch",
+              email,
+              accountId: id,
+              companyId: login.companyId,
+            })
+            .returning();
+
+          return { account, branch };
+        });
+
+        return c.json<SuccessResponse<{ name: string; username: string }>>(
+          {
+            success: true,
+            message: "Successfully created branch!",
+            data: {
+              name: register.branch.name,
+              username: register.account.username,
+            },
+          },
+          201
+        );
+      } catch (error) {
+        if (error instanceof DatabaseError && error.code === "23505") {
+          throw new HTTPException(409, {
+            message: "Username is already used!",
+            cause: { form: true },
+          });
+        }
+        throw new HTTPException(500, { message: "Failed to create account!" });
+      }
+    }
+  )
 
   // TODO: GET /all branches
   .get("/all", SessionMiddleware, async (c) => {

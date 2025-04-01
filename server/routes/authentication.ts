@@ -22,7 +22,6 @@ const route = new Hono<Context>()
     const { name, email, username, password } = c.req.valid("form");
     const hash = await Bun.password.hash(password);
     const id = crypto.randomUUID();
-    const login = c.get("account");
 
     try {
       const register = await db.transaction(async (tx) => {
@@ -41,10 +40,10 @@ const route = new Hono<Context>()
           .values({
             id,
             name,
-            role: login ? "branch" : "main",
+            role: "main",
             email,
             accountId: id,
-            companyId: login ? login.companyId : id,
+            companyId: id,
           })
           .returning();
 
