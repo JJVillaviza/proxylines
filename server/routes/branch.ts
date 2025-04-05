@@ -1,5 +1,6 @@
 import { db } from "@/database";
 import * as schemas from "@/database/schemas";
+import { AccountMiddleware } from "@/middlewares/account";
 import { SessionMiddleware } from "@/middlewares/session";
 import type { SuccessResponse } from "@/types/response";
 import {
@@ -23,6 +24,7 @@ const route = new Hono<Context>()
   .post(
     "/create",
     SessionMiddleware,
+    AccountMiddleware,
     zValidator("form", registerValidation),
     async (c) => {
       const { name, email, username, password } = c.req.valid("form");
@@ -76,19 +78,15 @@ const route = new Hono<Context>()
   )
 
   // TODO: GET /all branches
-  .get("/all", SessionMiddleware, async (c) => {
+  .get("/all", SessionMiddleware, AccountMiddleware, async (c) => {
     const account = c.get("account")!;
 
-    if (account.role !== "main") {
-      throw new HTTPException(401, { message: "Unauthorized! not main" });
-    }
-
-    const [branches] = await db
+    const branches = await db
       .select()
       .from(schemas.branchTable)
       .where(
         and(
-          eq(schemas.branchTable.id, account.accountId),
+          eq(schemas.branchTable.companyId, account.companyId),
           ne(schemas.branchTable.role, "main")
         )
       );
@@ -96,7 +94,7 @@ const route = new Hono<Context>()
     return c.json<SuccessResponse<Account[]>>({
       success: true,
       message: "Branches",
-      data: [branches],
+      data: [...branches],
     });
   })
 
@@ -107,11 +105,17 @@ const route = new Hono<Context>()
     zValidator("param", idValidation),
     async (c) => {
       const { id } = c.req.valid("param");
+      const account = c.get("account")!;
 
       const [branch] = await db
         .select()
         .from(schemas.branchTable)
-        .where(eq(schemas.branchTable.id, id))
+        .where(
+          and(
+            eq(schemas.branchTable.id, id),
+            eq(schemas.branchTable.companyId, account.companyId)
+          )
+        )
         .limit(1);
       if (!branch) {
         throw new HTTPException(404, { message: "No branch listed!" });
@@ -129,6 +133,7 @@ const route = new Hono<Context>()
   .patch(
     "/update/:id",
     SessionMiddleware,
+    AccountMiddleware,
     zValidator("form", branchValidation),
     zValidator("param", idValidation),
     async (c) => {
@@ -145,7 +150,7 @@ const route = new Hono<Context>()
         return c.json<SuccessResponse<{ name: string }>>({
           success: true,
           message: "Successfully updated!",
-          data: { ...result },
+          data: { name: result.name },
         });
       } catch (error) {
         if (error instanceof DatabaseError) {
@@ -166,36 +171,39 @@ const route = new Hono<Context>()
   .delete(
     "/delete/:id",
     SessionMiddleware,
+    AccountMiddleware,
     zValidator("param", idValidation),
     async (c) => {
       const { id } = c.req.valid("param");
       const account = c.get("account")!;
 
-      if (account.role !== "main") {
-        throw new HTTPException(401, { message: "Unauthorized!" });
-      }
-
       try {
-        const [deletedBranch] = await db
-          .delete(schemas.branchTable)
-          .where(
-            and(
-              eq(schemas.branchTable.id, id),
-              ne(schemas.branchTable.role, "main"),
-              eq(schemas.branchTable.companyId, account.companyId!)
+        const result = await db.transaction(async (tx) => {
+          const [deletedBranch] = await tx
+            .delete(schemas.branchTable)
+            .where(
+              and(
+                eq(schemas.branchTable.id, id),
+                ne(schemas.branchTable.role, "main"),
+                eq(schemas.branchTable.companyId, account.companyId)
+              )
             )
-          )
-          .returning({ name: schemas.branchTable.name });
+            .returning({ name: schemas.branchTable.name });
 
-        const [deletedAccount] = await db
-          .delete(schemas.accountTable)
-          .where(eq(schemas.accountTable.id, id))
-          .returning({ username: schemas.accountTable.username });
+          const [deletedAccount] = await tx
+            .delete(schemas.accountTable)
+            .where(eq(schemas.accountTable.id, id))
+            .returning({ username: schemas.accountTable.username });
 
+          return { deletedBranch, deletedAccount };
+        });
         return c.json<SuccessResponse<{ username: string; name: string }>>({
           success: true,
           message: "Successfully deleted branch!",
-          data: { username: deletedAccount.username, name: deletedBranch.name },
+          data: {
+            username: result.deletedAccount.username,
+            name: result.deletedBranch.name,
+          },
         });
       } catch (error) {
         if (error instanceof DatabaseError) {

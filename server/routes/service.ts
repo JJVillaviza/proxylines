@@ -13,6 +13,8 @@ import { and, eq } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import type { SuccessResponse } from "@/types/response";
 import { DatabaseError } from "pg";
+import { AccountMiddleware } from "@/middlewares/account";
+import { deleteCookie, setCookie } from "hono/cookie";
 
 const route = new Hono<Context>()
 
@@ -23,15 +25,12 @@ const route = new Hono<Context>()
   .post(
     "/create",
     SessionMiddleware,
+    AccountMiddleware,
     zValidator("form", serviceValidation),
     async (c) => {
       const { name, description, timeStart, timeEnd } = c.req.valid("form");
       const id = crypto.randomUUID();
       const account = c.get("account")!;
-
-      if (account.role !== "main") {
-        throw new HTTPException(409, { message: "Unauthorized!" });
-      }
 
       try {
         const [insert] = await db
@@ -48,7 +47,7 @@ const route = new Hono<Context>()
 
         return c.json<SuccessResponse<{ name: string }>>({
           success: true,
-          message: "",
+          message: "Successfully created service!",
           data: { name: insert.name },
         });
       } catch (error) {
@@ -68,18 +67,15 @@ const route = new Hono<Context>()
 
   // TODO: PATCH /update/:id service
   .patch(
-    "/update:id",
+    "/update/:id",
     SessionMiddleware,
+    AccountMiddleware,
     zValidator("form", serviceUpdateValidation),
     zValidator("param", idValidation),
     async (c) => {
       const { name, description, timeStart, timeEnd } = c.req.valid("form");
       const { id } = c.req.valid("param");
       const account = c.get("account")!;
-
-      if (account.role !== "main") {
-        throw new HTTPException(409, { message: "Unauthorized!" });
-      }
 
       try {
         const [update] = await db
@@ -113,6 +109,32 @@ const route = new Hono<Context>()
     }
   )
 
+  // TODO: GET /all services
+  .get("/all", SessionMiddleware, async (c) => {
+    const account = c.get("account")!;
+
+    const result = await db
+      .select()
+      .from(schemas.serviceTable)
+      .where(eq(schemas.serviceTable.companyId, account.companyId));
+    if (!result) {
+      throw new HTTPException(404, {
+        message: "No services for this company!",
+      });
+    }
+
+    deleteCookie(c, "_service_");
+
+    return c.json<SuccessResponse<Service[]>>(
+      {
+        success: true,
+        message: "List of services!",
+        data: [...result],
+      },
+      200
+    );
+  })
+
   // TODO: GET /:id service
   .get(
     "/:id",
@@ -122,7 +144,7 @@ const route = new Hono<Context>()
       const { id } = c.req.valid("param");
       const account = c.get("account")!;
 
-      const service = await db
+      const [service] = await db
         .select()
         .from(schemas.serviceTable)
         .where(
@@ -136,7 +158,9 @@ const route = new Hono<Context>()
         throw new HTTPException(404, { message: "No service!" });
       }
 
-      return c.json<SuccessResponse<Service[]>>({
+      setCookie(c, "_service_", service.id);
+
+      return c.json<SuccessResponse<Service>>({
         success: true,
         message: "Successfully retrieve service!",
         data: { ...service },
@@ -144,42 +168,15 @@ const route = new Hono<Context>()
     }
   )
 
-  // TODO: GET /all services
-  .get("/all", SessionMiddleware, async (c) => {
-    const account = c.get("account")!;
-
-    const [result] = await db
-      .select()
-      .from(schemas.serviceTable)
-      .where(eq(schemas.serviceTable.companyId, account.companyId));
-    if (!result) {
-      throw new HTTPException(404, {
-        message: "No services for this company!",
-      });
-    }
-
-    return c.json<SuccessResponse<Service[]>>(
-      {
-        success: true,
-        message: "List of services!",
-        data: [result],
-      },
-      200
-    );
-  })
-
   // TODO: DELETE /delete/:id
   .delete(
     "/delete/:id",
     SessionMiddleware,
+    AccountMiddleware,
     zValidator("param", idValidation),
     async (c) => {
       const { id } = c.req.valid("param");
       const account = c.get("account")!;
-
-      if (account.role !== "main") {
-        throw new HTTPException(409, { message: "Unauthorized!" });
-      }
 
       try {
         const deleteService = await db.transaction(async (tx) => {
@@ -200,6 +197,8 @@ const route = new Hono<Context>()
 
           return { service, requirement };
         });
+
+        deleteCookie(c, "_service_");
 
         return c.json<SuccessResponse<{ service: string }>>({
           success: true,

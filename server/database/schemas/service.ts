@@ -18,11 +18,12 @@ const serviceTable = pgTable("services", {
   deletedAt: timestamp("deleted_at", { withTimezone: true, mode: "date" }),
 });
 
-export const serviceRelation = relations(serviceTable, ({ one }) => ({
+export const serviceRelation = relations(serviceTable, ({ one, many }) => ({
   company: one(schemas.companyTable, {
     fields: [serviceTable.companyId],
     references: [schemas.companyTable.id],
   }),
+  requirement: many(schemas.requirementTable),
 }));
 
 export default serviceTable;

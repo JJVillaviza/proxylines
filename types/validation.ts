@@ -61,3 +61,13 @@ export const serviceUpdateValidation = z.object({
   timeStart: z.string().time().optional(),
   timeEnd: z.string().time().optional(),
 });
+
+export const requirementValidation = z.object({
+  name: z.string().min(3).max(20),
+  description: z.string().min(20),
+});
+
+export const requirementUpdateValidation = z.object({
+  name: z.string().min(3).max(20).optional(),
+  description: z.string().min(20).optional(),
+});

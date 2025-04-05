@@ -5,14 +5,15 @@ import {
   companyValidation,
   idValidation,
 } from "@/types/validation";
-import type { Context } from "@/utilities/context";
+import type { Company, Context } from "@/utilities/context";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { DatabaseError } from "pg";
 import * as schemas from "@/database/schemas";
 import type { SuccessResponse } from "@/types/response";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+import { AccountMiddleware } from "@/middlewares/account";
 
 const route = new Hono<Context>()
 
@@ -23,6 +24,7 @@ const route = new Hono<Context>()
   .post(
     "/create",
     SessionMiddleware,
+    AccountMiddleware,
     zValidator("form", companyValidation),
     async (c) => {
       const { businessName, brandName, description, vision, mission } =
@@ -65,39 +67,40 @@ const route = new Hono<Context>()
     }
   )
 
-  // TODO: /update/:id company details
+  // TODO: /update company details
   .patch(
-    "/update/:id",
+    "/update",
     SessionMiddleware,
+    AccountMiddleware,
     zValidator("form", companyUpdateValidation),
-    zValidator("param", idValidation),
     async (c) => {
       const { businessName, brandName, description, vision, mission } =
         c.req.valid("form");
-      const { id } = c.req.valid("param");
       const account = c.get("account")!;
 
-      if (account.role === "branch") {
-        throw new HTTPException(401, { message: "Unauthorized!" });
-      }
-
       try {
-        const [updated] = await db
-          .update(schemas.companyTable)
-          .set({ businessName, brandName, description, vision, mission })
-          .where(
-            and(
-              eq(schemas.companyTable.id, id),
-              eq(schemas.companyTable.id, account.companyId)
-            )
-          )
-          .returning();
+        const [result] = await db.transaction(async (tx) => {
+          const [select] = await tx
+            .select()
+            .from(schemas.companyTable)
+            .where(eq(schemas.companyTable.id, account.companyId))
+            .limit(1);
+          if (!select) {
+            throw new HTTPException(404, { message: "No company found!" });
+          }
 
-        return c.json<SuccessResponse<typeof updated>>(
+          return await tx
+            .update(schemas.companyTable)
+            .set({ businessName, brandName, description, vision, mission })
+            .where(eq(schemas.companyTable.id, account.companyId))
+            .returning();
+        });
+
+        return c.json<SuccessResponse<Company>>(
           {
             success: true,
             message: "Successfully updated details!",
-            data: { ...updated },
+            data: { ...result },
           },
           200
         );
@@ -116,50 +119,40 @@ const route = new Hono<Context>()
     }
   )
 
-  // TODO: /delete/:id company details
-  .delete(
-    "/delete/:id",
-    SessionMiddleware,
-    zValidator("param", idValidation),
-    async (c) => {
-      const { id } = c.req.valid("param");
-      const account = c.get("account")!;
+  // TODO: /delete company details
+  .delete("/delete", SessionMiddleware, AccountMiddleware, async (c) => {
+    const account = c.get("account")!;
 
-      if (account.accountId !== id && account.role !== "main") {
-        throw new HTTPException(409, { message: "Unauthorized!" });
-      }
+    try {
+      const [deleted] = await db.transaction(async (tx) => {
+        const [branch] = await tx
+          .delete(schemas.branchTable)
+          .where(eq(schemas.branchTable.companyId, account.companyId))
+          .returning({ id: schemas.branchTable.accountId });
+        await tx
+          .delete(schemas.accountTable)
+          .where(eq(schemas.accountTable.id, branch.id));
 
-      try {
-        const [deleted] = await db.transaction(async (tx) => {
-          const [branch] = await tx
-            .delete(schemas.branchTable)
-            .where(eq(schemas.branchTable.companyId, id))
-            .returning({ id: schemas.branchTable.accountId });
-          await tx
-            .delete(schemas.accountTable)
-            .where(eq(schemas.accountTable.id, branch.id));
+        return tx
+          .delete(schemas.companyTable)
+          .where(eq(schemas.companyTable.id, account.companyId))
+          .returning({ company: schemas.companyTable.businessName });
+      });
 
-          return tx
-            .delete(schemas.companyTable)
-            .where(eq(schemas.companyTable.id, account.companyId))
-            .returning({ company: schemas.companyTable.businessName });
+      return c.json<SuccessResponse<{ company: string }>>({
+        success: true,
+        message: "Successfully deleted company!",
+        data: { company: deleted.company },
+      });
+    } catch (error) {
+      if (error instanceof DatabaseError) {
+        throw new HTTPException(409, {
+          message: `${error.code}, ${error.message}`,
         });
-
-        return c.json<SuccessResponse<{ company: string }>>({
-          success: true,
-          message: "Successfully deleted company!",
-          data: { company: deleted.company },
-        });
-      } catch (error) {
-        if (error instanceof DatabaseError) {
-          throw new HTTPException(409, {
-            message: `${error.code}, ${error.message}`,
-          });
-        }
-        throw new HTTPException(500, { message: "Internal server error!" });
       }
+      throw new HTTPException(500, { message: "Internal server error!" });
     }
-  )
+  })
 
   // TODO: /:id company details
   .get(
@@ -176,7 +169,11 @@ const route = new Hono<Context>()
           .where(eq(schemas.companyTable.id, id))
           .limit(1);
 
-        return c.json<SuccessResponse<typeof company>>({
+        if (!company) {
+          throw new HTTPException(404, { message: "No company selected!" });
+        }
+
+        return c.json<SuccessResponse<Company>>({
           success: true,
           message: "Company fetch!",
           data: { ...company },
