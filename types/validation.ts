@@ -71,3 +71,17 @@ export const requirementUpdateValidation = z.object({
   name: z.string().min(3).max(20).optional(),
   description: z.string().min(20).optional(),
 });
+
+export const clientValidation = z.object({
+  firstName: z.string().min(3).max(30),
+  middleName: z.string().min(3).max(15),
+  lastName: z.string().min(3).max(15),
+  phoneNumber: z.string().regex(/^(09|\+639)\d{9}$/),
+  email: z.string().email(),
+  username: z
+    .string()
+    .min(3)
+    .max(31)
+    .regex(/^[a-zA-Z0-9_]+$/),
+  password: z.string().min(3).max(255),
+});

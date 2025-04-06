@@ -11,3 +11,4 @@ export {
   default as requirementTable,
   requirementRelation,
 } from "./requirement";
+export { default as clientTable, clientRelation } from "./client";
