@@ -24,6 +24,10 @@ export const serviceRelation = relations(serviceTable, ({ one, many }) => ({
     references: [schemas.companyTable.id],
   }),
   requirement: many(schemas.requirementTable),
+  transaction: one(schemas.transactionTable, {
+    fields: [serviceTable.id],
+    references: [schemas.transactionTable.serviceId],
+  }),
 }));
 
 export default serviceTable;

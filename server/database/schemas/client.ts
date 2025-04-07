@@ -24,6 +24,10 @@ export const clientRelation = relations(clientTable, ({ one }) => ({
     fields: [clientTable.accountId],
     references: [schemas.accountTable.id],
   }),
+  transaction: one(schemas.transactionTable, {
+    fields: [clientTable.id],
+    references: [schemas.transactionTable.clientId],
+  }),
 }));
 
 export default clientTable;

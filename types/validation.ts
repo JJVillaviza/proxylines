@@ -85,3 +85,7 @@ export const clientValidation = z.object({
     .regex(/^[a-zA-Z0-9_]+$/),
   password: z.string().min(3).max(255),
 });
+
+export const transactionValidation = z.object({
+  status: z.enum(["ongoing", "pending", "done"]).optional(),
+});

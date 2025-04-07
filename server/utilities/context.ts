@@ -7,6 +7,7 @@ export type Company = InferSelectModel<typeof schemas.companyTable>;
 export type Service = InferSelectModel<typeof schemas.serviceTable>;
 export type Requirement = InferSelectModel<typeof schemas.requirementTable>;
 export type Client = InferSelectModel<typeof schemas.clientTable>;
+export type Transaction = InferSelectModel<typeof schemas.transactionTable>;
 
 export type Context = {
   Variables: {

@@ -29,6 +29,10 @@ export const branchRelation = relations(branchTable, ({ one }) => ({
     fields: [branchTable.companyId],
     references: [schemas.companyTable.id],
   }),
+  transaction: one(schemas.transactionTable, {
+    fields: [branchTable.id],
+    references: [schemas.transactionTable.branchId],
+  }),
 }));
 
 export default branchTable;

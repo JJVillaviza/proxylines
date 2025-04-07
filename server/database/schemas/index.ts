@@ -12,3 +12,8 @@ export {
   requirementRelation,
 } from "./requirement";
 export { default as clientTable, clientRelation } from "./client";
+export {
+  default as transactionTable,
+  transactionRelation,
+  transactionEnum,
+} from "./transaction";
