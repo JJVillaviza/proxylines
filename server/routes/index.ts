@@ -15,5 +15,3 @@ export const routes = [
   clientRoute,
   transactionRoute,
 ] as const;
-
-export type AppRoutes = (typeof routes)[number];
