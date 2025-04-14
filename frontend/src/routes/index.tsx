@@ -1,4 +1,3 @@
-import * as React from "react";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
@@ -6,7 +5,6 @@ export const Route = createFileRoute("/")({
 });
 
 function HomeComponent() {
-  throw new Error("TEST ERROR");
   return (
     <div className="p-2">
       <h3>Welcome Home!</h3>

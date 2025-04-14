@@ -9,7 +9,7 @@ import * as schemas from "@/database/schemas";
 import { eq } from "drizzle-orm";
 import { deleteCookie, setCookie } from "hono/cookie";
 import { CreateSession } from "@/utilities/session";
-import type { Account, Context } from "@/utilities/context";
+import type { Context } from "@/utilities/context";
 import { SessionMiddleware } from "@/middlewares/session";
 
 const route = new Hono<Context>()
@@ -117,20 +117,17 @@ const route = new Hono<Context>()
       .delete(schemas.sessionTable)
       .where(eq(schemas.sessionTable.accountId, session.accountId));
 
-    return c.json<SuccessResponse>({
-      success: true,
-      message: "Successfully logout!",
-    });
+    return c.redirect("/");
   })
 
   // TODO: GET /me company
   .get("/me", SessionMiddleware, async (c) => {
     const account = c.get("account")!;
 
-    return c.json<SuccessResponse<Account>>({
+    return c.json<SuccessResponse<{ name: string }>>({
       success: true,
       message: "Account fetch!",
-      data: { ...account },
+      data: { name: account.name },
     });
   });
 
