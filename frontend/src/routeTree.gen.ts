@@ -11,19 +11,10 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as LoginImport } from './routes/login'
 import { Route as AboutImport } from './routes/about'
-import { Route as DashboardImport } from './routes/_dashboard'
 import { Route as IndexImport } from './routes/index'
-import { Route as DashboardDashboardImport } from './routes/_dashboard/dashboard'
 
 // Create/Update Routes
-
-const LoginRoute = LoginImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRoute,
-} as any)
 
 const AboutRoute = AboutImport.update({
   id: '/about',
@@ -31,21 +22,10 @@ const AboutRoute = AboutImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const DashboardRoute = DashboardImport.update({
-  id: '/_dashboard',
-  getParentRoute: () => rootRoute,
-} as any)
-
 const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRoute,
-} as any)
-
-const DashboardDashboardRoute = DashboardDashboardImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => DashboardRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
@@ -59,13 +39,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
-    '/_dashboard': {
-      id: '/_dashboard'
-      path: ''
-      fullPath: ''
-      preLoaderRoute: typeof DashboardImport
-      parentRoute: typeof rootRoute
-    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -73,89 +46,44 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutImport
       parentRoute: typeof rootRoute
     }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginImport
-      parentRoute: typeof rootRoute
-    }
-    '/_dashboard/dashboard': {
-      id: '/_dashboard/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardDashboardImport
-      parentRoute: typeof DashboardImport
-    }
   }
 }
 
 // Create and export the route tree
 
-interface DashboardRouteChildren {
-  DashboardDashboardRoute: typeof DashboardDashboardRoute
-}
-
-const DashboardRouteChildren: DashboardRouteChildren = {
-  DashboardDashboardRoute: DashboardDashboardRoute,
-}
-
-const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
-  DashboardRouteChildren,
-)
-
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '': typeof DashboardRouteWithChildren
   '/about': typeof AboutRoute
-  '/login': typeof LoginRoute
-  '/dashboard': typeof DashboardDashboardRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '': typeof DashboardRouteWithChildren
   '/about': typeof AboutRoute
-  '/login': typeof LoginRoute
-  '/dashboard': typeof DashboardDashboardRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
-  '/_dashboard': typeof DashboardRouteWithChildren
   '/about': typeof AboutRoute
-  '/login': typeof LoginRoute
-  '/_dashboard/dashboard': typeof DashboardDashboardRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '' | '/about' | '/login' | '/dashboard'
+  fullPaths: '/' | '/about'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '' | '/about' | '/login' | '/dashboard'
-  id:
-    | '__root__'
-    | '/'
-    | '/_dashboard'
-    | '/about'
-    | '/login'
-    | '/_dashboard/dashboard'
+  to: '/' | '/about'
+  id: '__root__' | '/' | '/about'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  DashboardRoute: typeof DashboardRouteWithChildren
   AboutRoute: typeof AboutRoute
-  LoginRoute: typeof LoginRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  DashboardRoute: DashboardRouteWithChildren,
   AboutRoute: AboutRoute,
-  LoginRoute: LoginRoute,
 }
 
 export const routeTree = rootRoute
@@ -169,29 +97,14 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/_dashboard",
-        "/about",
-        "/login"
+        "/about"
       ]
     },
     "/": {
       "filePath": "index.tsx"
     },
-    "/_dashboard": {
-      "filePath": "_dashboard.tsx",
-      "children": [
-        "/_dashboard/dashboard"
-      ]
-    },
     "/about": {
       "filePath": "about.tsx"
-    },
-    "/login": {
-      "filePath": "login.tsx"
-    },
-    "/_dashboard/dashboard": {
-      "filePath": "_dashboard/dashboard.tsx",
-      "parent": "/_dashboard"
     }
   }
 }
