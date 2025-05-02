@@ -1,12 +1,4 @@
 import { TermsPrivacyDialog } from "./TermsPrivacyDialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "./ui/dialog";
 
 const item = {
   terms: {
