@@ -11,79 +11,233 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as AboutImport } from './routes/about'
-import { Route as IndexImport } from './routes/index'
+import { Route as DashboardRouteImport } from './routes/dashboard/route'
+import { Route as AuthRouteImport } from './routes/_auth/route'
+import { Route as DashboardIndexImport } from './routes/dashboard/index'
+import { Route as AuthIndexImport } from './routes/_auth/index'
+import { Route as DashboardTransactionImport } from './routes/dashboard/transaction'
+import { Route as DashboardBranchImport } from './routes/dashboard/branch'
+import { Route as AuthRegisterImport } from './routes/_auth/register'
+import { Route as AuthForgetPasswordImport } from './routes/_auth/forget-password'
 
 // Create/Update Routes
 
-const AboutRoute = AboutImport.update({
-  id: '/about',
-  path: '/about',
+const DashboardRouteRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRoute,
 } as any)
 
-const IndexRoute = IndexImport.update({
+const AuthRouteRoute = AuthRouteImport.update({
+  id: '/_auth',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const DashboardIndexRoute = DashboardIndexImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+
+const AuthIndexRoute = AuthIndexImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
+
+const DashboardTransactionRoute = DashboardTransactionImport.update({
+  id: '/transaction',
+  path: '/transaction',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+
+const DashboardBranchRoute = DashboardBranchImport.update({
+  id: '/branch',
+  path: '/branch',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
+
+const AuthRegisterRoute = AuthRegisterImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
+
+const AuthForgetPasswordRoute = AuthForgetPasswordImport.update({
+  id: '/forget-password',
+  path: '/forget-password',
+  getParentRoute: () => AuthRouteRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexImport
+    '/_auth': {
+      id: '/_auth'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRoute
     }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutImport
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRoute
+    }
+    '/_auth/forget-password': {
+      id: '/_auth/forget-password'
+      path: '/forget-password'
+      fullPath: '/forget-password'
+      preLoaderRoute: typeof AuthForgetPasswordImport
+      parentRoute: typeof AuthRouteImport
+    }
+    '/_auth/register': {
+      id: '/_auth/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof AuthRegisterImport
+      parentRoute: typeof AuthRouteImport
+    }
+    '/dashboard/branch': {
+      id: '/dashboard/branch'
+      path: '/branch'
+      fullPath: '/dashboard/branch'
+      preLoaderRoute: typeof DashboardBranchImport
+      parentRoute: typeof DashboardRouteImport
+    }
+    '/dashboard/transaction': {
+      id: '/dashboard/transaction'
+      path: '/transaction'
+      fullPath: '/dashboard/transaction'
+      preLoaderRoute: typeof DashboardTransactionImport
+      parentRoute: typeof DashboardRouteImport
+    }
+    '/_auth/': {
+      id: '/_auth/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AuthIndexImport
+      parentRoute: typeof AuthRouteImport
+    }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexImport
+      parentRoute: typeof DashboardRouteImport
     }
   }
 }
 
 // Create and export the route tree
 
+interface AuthRouteRouteChildren {
+  AuthForgetPasswordRoute: typeof AuthForgetPasswordRoute
+  AuthRegisterRoute: typeof AuthRegisterRoute
+  AuthIndexRoute: typeof AuthIndexRoute
+}
+
+const AuthRouteRouteChildren: AuthRouteRouteChildren = {
+  AuthForgetPasswordRoute: AuthForgetPasswordRoute,
+  AuthRegisterRoute: AuthRegisterRoute,
+  AuthIndexRoute: AuthIndexRoute,
+}
+
+const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
+  AuthRouteRouteChildren,
+)
+
+interface DashboardRouteRouteChildren {
+  DashboardBranchRoute: typeof DashboardBranchRoute
+  DashboardTransactionRoute: typeof DashboardTransactionRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
+}
+
+const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
+  DashboardBranchRoute: DashboardBranchRoute,
+  DashboardTransactionRoute: DashboardTransactionRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
+}
+
+const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
+  DashboardRouteRouteChildren,
+)
+
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/about': typeof AboutRoute
+  '': typeof AuthRouteRouteWithChildren
+  '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/forget-password': typeof AuthForgetPasswordRoute
+  '/register': typeof AuthRegisterRoute
+  '/dashboard/branch': typeof DashboardBranchRoute
+  '/dashboard/transaction': typeof DashboardTransactionRoute
+  '/': typeof AuthIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
 }
 
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/about': typeof AboutRoute
+  '/forget-password': typeof AuthForgetPasswordRoute
+  '/register': typeof AuthRegisterRoute
+  '/dashboard/branch': typeof DashboardBranchRoute
+  '/dashboard/transaction': typeof DashboardTransactionRoute
+  '/': typeof AuthIndexRoute
+  '/dashboard': typeof DashboardIndexRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
-  '/': typeof IndexRoute
-  '/about': typeof AboutRoute
+  '/_auth': typeof AuthRouteRouteWithChildren
+  '/dashboard': typeof DashboardRouteRouteWithChildren
+  '/_auth/forget-password': typeof AuthForgetPasswordRoute
+  '/_auth/register': typeof AuthRegisterRoute
+  '/dashboard/branch': typeof DashboardBranchRoute
+  '/dashboard/transaction': typeof DashboardTransactionRoute
+  '/_auth/': typeof AuthIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about'
+  fullPaths:
+    | ''
+    | '/dashboard'
+    | '/forget-password'
+    | '/register'
+    | '/dashboard/branch'
+    | '/dashboard/transaction'
+    | '/'
+    | '/dashboard/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about'
-  id: '__root__' | '/' | '/about'
+  to:
+    | '/forget-password'
+    | '/register'
+    | '/dashboard/branch'
+    | '/dashboard/transaction'
+    | '/'
+    | '/dashboard'
+  id:
+    | '__root__'
+    | '/_auth'
+    | '/dashboard'
+    | '/_auth/forget-password'
+    | '/_auth/register'
+    | '/dashboard/branch'
+    | '/dashboard/transaction'
+    | '/_auth/'
+    | '/dashboard/'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AboutRoute: typeof AboutRoute
+  AuthRouteRoute: typeof AuthRouteRouteWithChildren
+  DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  AboutRoute: AboutRoute,
+  AuthRouteRoute: AuthRouteRouteWithChildren,
+  DashboardRouteRoute: DashboardRouteRouteWithChildren,
 }
 
 export const routeTree = rootRoute
@@ -96,15 +250,49 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
-        "/",
-        "/about"
+        "/_auth",
+        "/dashboard"
       ]
     },
-    "/": {
-      "filePath": "index.tsx"
+    "/_auth": {
+      "filePath": "_auth/route.tsx",
+      "children": [
+        "/_auth/forget-password",
+        "/_auth/register",
+        "/_auth/"
+      ]
     },
-    "/about": {
-      "filePath": "about.tsx"
+    "/dashboard": {
+      "filePath": "dashboard/route.tsx",
+      "children": [
+        "/dashboard/branch",
+        "/dashboard/transaction",
+        "/dashboard/"
+      ]
+    },
+    "/_auth/forget-password": {
+      "filePath": "_auth/forget-password.tsx",
+      "parent": "/_auth"
+    },
+    "/_auth/register": {
+      "filePath": "_auth/register.tsx",
+      "parent": "/_auth"
+    },
+    "/dashboard/branch": {
+      "filePath": "dashboard/branch.tsx",
+      "parent": "/dashboard"
+    },
+    "/dashboard/transaction": {
+      "filePath": "dashboard/transaction.tsx",
+      "parent": "/dashboard"
+    },
+    "/_auth/": {
+      "filePath": "_auth/index.tsx",
+      "parent": "/_auth"
+    },
+    "/dashboard/": {
+      "filePath": "dashboard/index.tsx",
+      "parent": "/dashboard"
     }
   }
 }
