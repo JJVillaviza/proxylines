@@ -13,10 +13,17 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { Outlet, createFileRoute } from "@tanstack/react-router";
+import { userQueryOptions } from "@/lib/api";
+import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/dashboard")({
   component: RouteComponent,
+  beforeLoad: async ({ context, location }) => {
+    const user = await context.queryClient.ensureQueryData(userQueryOptions());
+    if (!user) {
+      throw redirect({ to: "/", search: { redirect: location.href } });
+    }
+  },
 });
 
 function RouteComponent() {

@@ -1,12 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import {
-  Activity,
-  Building2,
-  Command,
-  GalleryVerticalEnd,
-  LayoutDashboard,
-  Split,
-} from "lucide-react";
+import { Activity, Building2, Command, LayoutDashboard } from "lucide-react";
 import { UserDropdown } from "./UserDropdown";
 import {
   Sidebar,

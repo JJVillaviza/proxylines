@@ -1,5 +1,13 @@
 import { Avatar } from "@radix-ui/react-avatar";
 import {
+  BadgeCheck,
+  Bell,
+  ChevronsUpDown,
+  CreditCard,
+  LogOut,
+} from "lucide-react";
+import { AvatarFallback, AvatarImage } from "./ui/avatar";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
@@ -14,15 +22,6 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "./ui/sidebar";
-import { AvatarFallback, AvatarImage } from "./ui/avatar";
-import {
-  BadgeCheck,
-  Bell,
-  ChevronsUpDown,
-  CreditCard,
-  LogOut,
-  Sparkles,
-} from "lucide-react";
 
 const user = {
   name: "shadcn",
