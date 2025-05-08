@@ -8,3 +8,11 @@ export type ErrorResponse = {
   error: string;
   isFormError?: boolean;
 };
+
+export type PaginatedResponse<T> = {
+  pagination: {
+    page: number;
+    totalPage: number;
+  };
+  data: T;
+} & Omit<SuccessResponse, "data">;

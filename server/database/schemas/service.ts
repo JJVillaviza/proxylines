@@ -1,6 +1,8 @@
 import { relations } from "drizzle-orm";
 import { pgTable, text, time, timestamp, uuid } from "drizzle-orm/pg-core";
 import * as schemas from "./index";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
 
 const serviceTable = pgTable("services", {
   id: uuid("id").primaryKey(),
@@ -16,6 +18,17 @@ const serviceTable = pgTable("services", {
     .notNull()
     .$onUpdate(() => new Date()),
   deletedAt: timestamp("deleted_at", { withTimezone: true, mode: "date" }),
+});
+
+export const serviceInsertSchema = createInsertSchema(serviceTable, {
+  name: z.string().min(3, { message: "Name must have atleast 3 characters" }),
+  description: z
+    .string()
+    .min(10, { message: "Name must have atleast 10 characters" })
+    .optional()
+    .or(z.literal("")),
+  timeStart: z.string().time().or(z.literal("08:00")),
+  timeEnd: z.string().time().or(z.literal("17:00")),
 });
 
 export const serviceRelation = relations(serviceTable, ({ one, many }) => ({

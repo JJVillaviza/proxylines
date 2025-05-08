@@ -1,20 +1,21 @@
 import { db } from "@/database";
+import * as schemas from "@/database/schemas";
+import { AccountMiddleware } from "@/middlewares/account";
 import { SessionMiddleware } from "@/middlewares/session";
+import type { PaginatedResponse, SuccessResponse } from "@/types/response";
 import {
+  createServiceSchema,
   idValidation,
+  paginationSchema,
   serviceUpdateValidation,
-  serviceValidation,
 } from "@/types/validation";
 import type { Context, Service } from "@/utilities/context";
 import { zValidator } from "@hono/zod-validator";
+import { and, asc, countDistinct, desc, eq } from "drizzle-orm";
 import { Hono } from "hono";
-import * as schemas from "@/database/schemas";
-import { and, eq } from "drizzle-orm";
-import { HTTPException } from "hono/http-exception";
-import type { SuccessResponse } from "@/types/response";
-import { DatabaseError } from "pg";
-import { AccountMiddleware } from "@/middlewares/account";
 import { deleteCookie, setCookie } from "hono/cookie";
+import { HTTPException } from "hono/http-exception";
+import { DatabaseError } from "pg";
 
 const route = new Hono<Context>()
 
@@ -26,7 +27,7 @@ const route = new Hono<Context>()
     "/create",
     SessionMiddleware,
     AccountMiddleware,
-    zValidator("form", serviceValidation),
+    zValidator("form", createServiceSchema),
     async (c) => {
       const { name, description, timeStart, timeEnd } = c.req.valid("form");
       const id = crypto.randomUUID();
@@ -45,11 +46,14 @@ const route = new Hono<Context>()
           })
           .returning();
 
-        return c.json<SuccessResponse<{ name: string }>>({
-          success: true,
-          message: "Successfully created service!",
-          data: { name: insert.name },
-        });
+        return c.json<SuccessResponse<{ serviceId: string }>>(
+          {
+            success: true,
+            message: "Successfully created service!",
+            data: { serviceId: insert.id },
+          },
+          201
+        );
       } catch (error) {
         if (error instanceof DatabaseError) {
           throw new HTTPException(409, {
@@ -110,30 +114,50 @@ const route = new Hono<Context>()
   )
 
   // TODO: GET /all services
-  .get("/all", SessionMiddleware, async (c) => {
-    const account = c.get("account")!;
+  .get(
+    "/all",
+    SessionMiddleware,
+    zValidator("query", paginationSchema),
+    async (c) => {
+      const { limit, page, sortBy, orderBy } = c.req.valid("query");
+      const account = c.get("account")!;
 
-    const result = await db
-      .select()
-      .from(schemas.serviceTable)
-      .where(eq(schemas.serviceTable.companyId, account.companyId));
-    if (!result) {
-      throw new HTTPException(404, {
-        message: "No services for this company!",
+      const offset = (page - 1) * limit;
+      const sortByColumn =
+        sortBy === "recent"
+          ? schemas.serviceTable.updatedAt
+          : schemas.serviceTable.createdAt;
+      const sortOrder =
+        orderBy === "desc" ? desc(sortByColumn) : asc(sortByColumn);
+
+      const [count] = await db
+        .select({
+          count: countDistinct(schemas.serviceTable.id),
+        })
+        .from(schemas.serviceTable)
+        .where(eq(schemas.serviceTable.companyId, account.companyId));
+
+      const service = await db.query.serviceTable.findMany({
+        limit: limit,
+        offset: offset,
+        orderBy: sortOrder,
+        where: (company, { eq }) => eq(company.companyId, account.companyId),
       });
+
+      return c.json<PaginatedResponse<Service[]>>(
+        {
+          data: service as Service[],
+          success: true,
+          message: "Service fetch!",
+          pagination: {
+            page,
+            totalPage: Math.ceil(count.count / limit) as number,
+          },
+        },
+        200
+      );
     }
-
-    deleteCookie(c, "_service_");
-
-    return c.json<SuccessResponse<Service[]>>(
-      {
-        success: true,
-        message: "List of services!",
-        data: [...result],
-      },
-      200
-    );
-  })
+  )
 
   // TODO: GET /:id service
   .get(

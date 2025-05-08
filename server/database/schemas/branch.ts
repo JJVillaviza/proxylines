@@ -1,6 +1,8 @@
 import { relations } from "drizzle-orm";
 import { pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import * as schemas from "./index";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
 
 export const branchEnum = pgEnum("branchTypes", ["main", "branch"]);
 
@@ -18,6 +20,10 @@ const branchTable = pgTable("branches", {
     .notNull()
     .$onUpdate(() => new Date()),
   deletedAt: timestamp("deleted_at", { withTimezone: true, mode: "date" }),
+});
+
+export const branchInsertSchema = createInsertSchema(branchTable, {
+  name: z.string().min(3, { message: "Name must have atleast 3 characters" }),
 });
 
 export const branchRelation = relations(branchTable, ({ one }) => ({

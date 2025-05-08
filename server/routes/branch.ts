@@ -2,15 +2,16 @@ import { db } from "@/database";
 import * as schemas from "@/database/schemas";
 import { AccountMiddleware } from "@/middlewares/account";
 import { SessionMiddleware } from "@/middlewares/session";
-import type { SuccessResponse } from "@/types/response";
+import type { PaginatedResponse, SuccessResponse } from "@/types/response";
 import {
   branchValidation,
   idValidation,
+  paginationSchema,
   registerValidation,
 } from "@/types/validation";
 import type { Account, Context } from "@/utilities/context";
 import { zValidator } from "@hono/zod-validator";
-import { and, eq, ne } from "drizzle-orm";
+import { and, asc, countDistinct, desc, eq, ne } from "drizzle-orm";
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { DatabaseError } from "pg";
@@ -78,25 +79,80 @@ const route = new Hono<Context>()
   )
 
   // TODO: GET /all branches
-  .get("/all", SessionMiddleware, AccountMiddleware, async (c) => {
-    const account = c.get("account")!;
+  // .get("/all", SessionMiddleware, AccountMiddleware, async (c) => {
+  //   const account = c.get("account")!;
 
-    const branches = await db
-      .select()
-      .from(schemas.branchTable)
-      .where(
-        and(
-          eq(schemas.branchTable.companyId, account.companyId),
-          ne(schemas.branchTable.role, "main")
-        )
+  //   const branches = await db
+  //     .select()
+  //     .from(schemas.branchTable)
+  //     .where(
+  //       and(
+  //         eq(schemas.branchTable.companyId, account.companyId),
+  //         ne(schemas.branchTable.role, "main")
+  //       )
+  //     );
+
+  //   return c.json<SuccessResponse<Account[]>>({
+  //     success: true,
+  //     message: "Branches",
+  //     data: [...branches],
+  //   });
+  // })
+
+  .get(
+    "/all",
+    SessionMiddleware,
+    AccountMiddleware,
+    zValidator("query", paginationSchema),
+    async (c) => {
+      const { limit, page, sortBy, orderBy } = c.req.valid("query");
+      const account = c.get("account")!;
+
+      const offset = (page - 1) * limit;
+      const sortByColumn =
+        sortBy === "recent"
+          ? schemas.serviceTable.updatedAt
+          : schemas.serviceTable.createdAt;
+      const sortOrder =
+        orderBy === "desc" ? desc(sortByColumn) : asc(sortByColumn);
+
+      const [count] = await db
+        .select({
+          count: countDistinct(schemas.branchTable.id),
+        })
+        .from(schemas.branchTable)
+        .where(
+          and(
+            eq(schemas.branchTable.companyId, account.companyId),
+            eq(schemas.branchTable.role, "branch")
+          )
+        );
+
+      const branch = await db.query.branchTable.findMany({
+        limit: limit,
+        offset: offset,
+        orderBy: sortOrder,
+        where: (company, { eq, and }) =>
+          and(
+            eq(company.companyId, account.companyId),
+            eq(company.role, "branch")
+          ),
+      });
+
+      return c.json<PaginatedResponse<Account[]>>(
+        {
+          data: branch as Account[],
+          success: true,
+          message: "Branch fetch!",
+          pagination: {
+            page,
+            totalPage: Math.ceil(count.count / limit) as number,
+          },
+        },
+        200
       );
-
-    return c.json<SuccessResponse<Account[]>>({
-      success: true,
-      message: "Branches",
-      data: [...branches],
-    });
-  })
+    }
+  )
 
   // TODO: GET /:id details of login branch
   .get(

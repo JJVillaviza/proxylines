@@ -1,3 +1,4 @@
+import * as schemas from "@/database/schemas";
 import { z } from "zod";
 
 export const registerValidation = z.object({
@@ -88,4 +89,21 @@ export const clientValidation = z.object({
 
 export const transactionValidation = z.object({
   status: z.enum(["ongoing", "pending", "done"]).optional(),
+});
+
+export const createServiceSchema = schemas.serviceInsertSchema.pick({
+  name: true,
+  description: true,
+  timeStart: true,
+  timeEnd: true,
+});
+
+export const sortBySchema = z.enum(["oldest", "recent"]);
+export const orderBySchema = z.enum(["asc", "desc"]);
+
+export const paginationSchema = z.object({
+  limit: z.number({ coerce: true }).optional().default(5),
+  page: z.number({ coerce: true }).optional().default(1),
+  sortBy: sortBySchema.optional().default("recent"),
+  orderBy: orderBySchema.optional().default("desc"),
 });
